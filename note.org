@@ -181,6 +181,39 @@ for val in arr.iter() {
   }
 #+end_src
 ** HashMap
+*** C++
+#+begin_src C++ :comments create a hash map
+  #include <unordered_map>
+  #include <string>
+  #include <time>
+
+  struct Info {
+    int processTimes;
+    std::string state;
+  }
+  
+  std::unordered_map<std::string, Info> files;
+
+  std::string ts = to_string(time(nullptr));
+  Info info;
+  info.processTimes = 0;
+  info.state = "Init states";
+
+  files.insert(pair<std::string, Info>(ts, info));
+
+  auto iter = files.find("key");
+  if (iter != files.end()) {
+    std::cout << "state: " << iter->second.state << std::endl;
+  }
+#+end_src
+
+#+begin_src C++ :comments hashmap empty, find, key and value
+hashmap.clear();
+auto iter = hashmap.find("some key");  // return an iter
+
+iter->first;   // hashmap's key
+iter->second;  // hashmap's value
+#+end_src
 *** Rust
 **** create and access hash map 
 #+begin_src rust
@@ -224,6 +257,121 @@ for val in arr.iter() {
 #+end_src
 ** String
 *** C++ 
+#+begin_src C++ :comments create and init
+  #include <iostream>
+  #include <string>
+
+  std::string s = "http://localhost:5000";
+  std::string s;
+  std::string s(5, 's');  // s == "sssss"
+
+  s.length();
+  s.size();
+
+  // to c style string
+  s.c_str();
+#+end_src
+#+begin_src C++ :comments string add, insert, delete, replace
+  #include <string>
+  #include <iostream>
+
+  std::string s1 = "hello";
+  std::string s2 = "world";
+
+  char *s3 = "thired";
+  char s4[] = "fourth";
+
+  std::string s5 = s1 + s2;
+  std::string s6 = s1 + s3;
+
+
+  // insert
+  s5.insert(5, s3);
+
+  // delete
+  s2.erase(3);
+  s2.erase(3, 2);
+
+  // substr
+  string s7 = s1.substr(2, 2);
+
+  // find
+  int idx = s1.find("l");
+  int idx = s1.rfind("l");
+#+end_src 
+#+begin_src C++ :comment  split
+  // stringstream and getline
+  std::vector<std::string> stringSplit(const std::string &str, char delim)
+  {
+    std::stringstream ss(str);
+    std::string item;
+
+    std::vector<std::string> elems;
+    while(std::getlines(ss, item, delim)) {
+      if (!item.empty())
+        elems.push_back(item);
+    }
+    return elems;
+  }
+
+  // with std::string::find
+  std::vector<std::string> stringSplit(const std::string &str, char delim)
+  {
+    std::vector<std::string> elems;
+    std::size_t previous = 0;
+    std::size_t current = str.find(delim);
+
+    while(current != std::string::nopos) {
+      if (current > previous)
+        elems.push_back(str.substr(previous, current - previous));
+      previous = current + 1;
+      current = str.find(delim, previous);
+    }
+
+    if (previous != str.size())
+      elems.push_back(str.substr(previous));
+  
+    return elems;
+  }
+      
+  // with regex
+  std::vector<std::string> stringSplit(const std::string &str, char delim)
+  {
+    std::string s;
+    s.append(1, delim);
+    std::regex reg(s);
+
+    std::vector<std::string> elems(
+      std::sregex_token_iterator(
+          str.begin(), str.end(), reg, -1),
+          std::sregex_token_iterator()
+      );
+    return elems;
+  }
+#+end_src
+#+begin_src C++ :comments replace
+  // replace once
+  std::string line = "this@ is@ a string";
+  line = line.replace(line.find("@"), 1, "");y
+
+  line = line.replace(line.begin(), line.begin() + 6, "");
+
+  std::string replaceAll(const std::string src, std::string delim) {
+    std::string line(src);
+    int lastPos = 0;
+    // replace all
+    while (true) {
+      lastPos = line.find(delim, lastPos);
+      if (lastPos > 0 && lastPos < line.size()) {
+        line = line.replace(lastPos, delim.size(), "");
+        lastPos -= delim.size();  // 因为替换掉了一位, 所以位置往前走一位
+      } else {
+        break;
+      }
+    }
+    return line;
+  }
+#+end_src
 *** Rust
 **** create string in rust
 #+begin_src rust
@@ -257,3 +405,4 @@ let p: Vec<&str> = str.lines().collect();
 
   let p: Vec<&st> = s.split([':', ';', ' '].as_ref()).collect();
 #+end_src
+** struct
