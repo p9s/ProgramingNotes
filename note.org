@@ -1,0 +1,259 @@
+* Windows system hosts file path
+C:\Windows\System32\drivers\etc
+* Programing
+** C++ compile errors
+*** C4996	'ctime': use _CRT_SECURE_NO_WARNINGS.
+项目 -> 属性 -> C/C++ -> 预处理器 -> 预处理器定义
+添加以下语句：
+_CRT_SECURE_NO_WARNINGS
+** File & Directory
+*** C++
+**** 检查目录是否存在
+***** stat :: windows & linux 通用
+#+begin_src C++
+  #include <sys/types.h>
+  #include <sys/stat.h>
+
+  std::string file_name = "deadman";
+  struct stat info;
+  if (stat(file_name.c_str(), &info) != 0) {  // does not exist
+      printf("cannot access %s\n", file_name.c_str());
+  }        
+  else if (info.st_mode & S_IFDIR) {          // directory
+      printf("%s is a directory\n", file_name.c_str());
+  }        
+  else {
+      printf("%s is no directory\n", file_name.c_str());
+  }  
+#+end_src 
+***** C++ 17 std::filesystem
+#+begin_src C++
+#include <filesystem>
+    
+std::string file_name = "deadman";
+if (std::filesystem::exists(file_name)) {
+    if (std::filesystem::is_directory(file)) {
+        printf("%s is a directory\n", file_name.c_str());
+    }
+    else if (std::filesystem::is_regular_file(file)) {
+        printf("%s is a file\n", file_name.c_str());
+    }
+    else {
+        printf("%s exists\n", file_name.c_str());
+    } 
+}
+else {
+    printf("%s does not exist\n", file_name.c_str());
+}
+#+end_src
+***** direct.h  _access
+#+begin_src C++
+  #include <direct.h>
+  #include <string.h>
+  #include <io.h>
+  
+  std::string filePath = "d:\\test";
+  if (_access(filePath.c_str(), 0) == -1) {
+      _mkdir(filePath.c_str());
+  }
+#+end_src
+**** 创建目录 
+***** direct.h _mkdir
+#+begin_src C++
+  #include <direct.h>
+  #include <string.h>
+  #include <io.h>
+
+  std::string path = "d:\\test";
+  _mkdir(path.c_str());
+#+end_src
+***** system command
+#+begin_src C++
+#include <string>
+std::string filePath = "d:\\test";
+std::string cmdStr = "mkdir -p " + filePath;
+system(cmdStr.c_str());
+#+end_src
+**** 写文件
+#+begin_src c++
+  #include <stdio.h>
+
+  void writeFile(std::string fileName, std::string data)
+  {
+    if (fileName.isNull())
+      return;
+  
+    FILE *fh;
+    fh = fopen(fileName.c_str(), "w");
+    if(fh) {
+      fprintf(fh, "%d\n", 1);
+    }
+    fclose(fh);
+  }
+#+end_src
+**** 文件追加内容
+#+begin_src C++
+#include <fstream>
+std::string fileName = "c:\\1.log";
+ofstream fh;
+fh.open(fileName);
+if (fh.is_open()) {
+    fh << "infomation" << std::endl;
+    fh.close();
+}
+#+end_src
+** DateTime
+*** C++
+**** get current datetime with string data type
+#+begin_src C++
+  #include <ctime.h>
+  time_t ltime;
+  time(&ltime);
+  tm *tmStruct = localtime(&ltime);
+  
+  char cdt[20] = { 0 };
+  sprintf(cdt,
+  		"%04d-%02d-%02d %02d:%02d:%02d", 
+  		tmStruct->tm_year + 1900, 
+  		tmStruct->tm_mon + 1, 
+  		tmStruct->tm_mday, 
+  		tmStruct->tm_hour, 
+  		tmStruct->tm_min, 
+  		tmStruct->tm_sec
+  );
+  
+  std::string currentDateTime(cdt);
+#+end_src
+**** process datetime with chrono
+#+begin_src C++
+
+#+end_src
+** Array
+*** Rust
+**** define and initial array
+#+begin_src rust
+  let variable: [dataType; size] = [value1, value2..., valueN];
+  let arr:[i32; 3] = [1, 2, 3];
+  let arr:[i32; 3] = [default_value_for_each_element, size];
+  let arr:[i32; 3] = [0, 3];
+#+end_src
+**** access array
+#+begin_src rust :comments access by for loop
+  let arr = [1,2,3,4];
+
+  for idx in 0..4 {
+      println!("index is: {} value is: {}", idx, arr[idx]);
+  }
+#+end_src
+
+#+begin_src rust  :comments access by iter
+let arr = [1, 2, 3, 4];
+for val in arr.iter() {
+    println!("value is: {}", val);
+}
+#+end_src
+**** editble array
+#+begin_src rust
+  let mut arr = [1, 2, 3, 4];
+  arr[0] = 8;
+#+end_src
+**** pass to function
+***** by value
+#+begin_src rust
+  let arr = [1, 2];
+  update(arr);
+
+  fn update(mut arr:[i32;2]) {
+      for i in 0..2 {
+          arr[i] = 0;
+      }
+  }
+#+end_src
+***** by refrence
+#+begin_src rust
+  let mut arr = [1, 2];
+  update(&mut arr);
+
+  fn update(arr:&mut [i32;2]) {
+      for i in 0..2 {
+          arr[i] = 0;
+      }
+  }
+#+end_src
+** HashMap
+*** Rust
+**** create and access hash map 
+#+begin_src rust
+  use std::collections::HashMap;
+
+  // insert
+  let mut contacts = HashMap::new();
+  contacts.insert("Danile", "1234567");
+  contacts.insert("Katie", "1234567");
+
+  // access
+  match contacts.get(&"Danile") {
+      Some(&number) => println!("{}", number),
+      _ => println!("Don't have Danile's number."),
+  }
+
+  contacts.remove(&"Ashley");
+
+
+  // access by for loop
+  for (k, v) in contacts {
+      println!("{}: {}": k, v);
+  }
+
+  // insert only when key not exists :: entry
+  contacts.entry("zhang shan".to_string()).or_insert("1234567");
+#+end_src
+
+#+begin_src rust :comments 统计词频
+  use std::collections::HashMap;
+
+  let txt = "hello long long string with hello";
+
+  let mut map = HashMap::new();
+
+  for word in txt.split_withspace() {
+      let count = map.entry(word).or_insert(0);
+      *count += 1;
+  }
+  println!("{:?}", map);
+#+end_src
+** String
+*** C++ 
+*** Rust
+**** create string in rust
+#+begin_src rust
+let name = string::from("zhang shan");
+let name = "zhang shan".to_string();
+let name = name.to_owned();   // make name copy 
+#+end_src
+**** split
+#+begin_src rust
+let str = "long long long strings".to_string();
+let p: Vec<&str> = str.split(" ").collect();
+let p: Vec<&str> = str.split_withspace().collect();
+
+// split by \n
+let p: Vec<&str> = str.lines().collect();
+#+end_src
+
+#+begin_src rust :colnames split usging regex
+  // in cargo.toml add: regex="1"
+  use regex::Regex;
+
+  let s: &str = "long long long long str";
+  let p: Vec<&str> Regex::new(r"\s").unwrap().split(s).collect();
+#+end_src
+
+#+begin_src rust
+  // split string on Multiple delimiters
+
+  let s: &str =  "electron:muon;positron neutrino-gluon";
+  let p: Vec<&str> = s.split(|c| (c == ':') || (c == ';') || (c == ' ')).collect();
+
+  let p: Vec<&st> = s.split([':', ';', ' '].as_ref()).collect();
+#+end_src
