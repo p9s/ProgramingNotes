@@ -256,6 +256,43 @@ iter->second;  // hashmap's value
   println!("{:?}", map);
 #+end_src
 ** String
+*** C
+#+begin_src C :comments unicode str
+  #include <stdio.h>
+  #include <wchar.h>
+
+  int main() {
+    char ch = 'A';                 // sizeof 1
+    wchar_t wch = 'A';             // sizeof 2
+    char str[] = "C语言中文网";      // sizeof 17  ?
+    wchar_t wstr[] = L"C语言中文网"; // sizeof 14
+    return 0;
+  }
+#+end_src
+#+begin_src C :comments wide character length
+  #include <stdio.h>
+  #include <wchar.h>
+  #include <string.h>
+
+  int main()
+  {
+    char str[] = "C中文";            // strlen(str) ==   7
+    wchar_t wstr[] = L"C中文";       // wstrlen(wstr) == 3
+    return 0;
+  }
+#+end_src
+#+begin_src C :comments compatibility(兼容) ascii and unicode
+  // defined in windows.h
+  #ifdef UNICODE
+  typedef wchar_t TCHAR;
+  #define TEXT(quote) L##quote
+  #else
+  typedef char TCHAR;
+  #define TEXT(quote) quote
+  #endif
+
+  TCHAR str[] = TEXT("A 字符串");
+#+end_src
 *** C++ 
 #+begin_src C++ :comments create and init
   #include <iostream>
@@ -406,3 +443,75 @@ let p: Vec<&str> = str.lines().collect();
   let p: Vec<&st> = s.split([':', ';', ' '].as_ref()).collect();
 #+end_src
 ** struct
+* Win32 Printer Driver
+** 环境
+- vs 2017
+- wdk 10.0.17763.1 及 wdk 扩展 :: 需要与 *sdk* 版本对应
+- 支持XP, 安装时勾选 Windows XP 支持
+** 测试环境
+- vmware
+- virtualIKD
+* Windows Programing
+** Windows data types
+- 无符号类型:   U 开头,  如: UINT
+- 指针类型:  LP(老式写法) or P 开头, 如: LPDWORD or PDWORD
+- 句柄类型: H 开头, 如: HWND, HMENU
+- 常见类型列表 
+  |---------+----------------+-----------+---------------------------------|
+  | typedef | int            | INT;      | /* 整形 */                      |
+  | typedef | unsigned int   | UINT;     | /* 无符号整形 */                |
+  | typedef | unsigned int   | *PUINT;   | /* 无符号整形指针 */            |
+  | typedef | int            | BOOL;     | /* 布尔类型 */                  |
+  | typedef | unsigned char  | BYTE;     | /* 字节 */                      |
+  | typedef | unsigned short | WORD;     | /* WORD (无符号短整型) */       |
+  | typedef | unsigned long  | DWORD;    | /* DOUBLE WORD (无符号长整形)*/ |
+  | typedef | float          | FLOAT;    | /* 浮点型 */                    |
+  | typedef | FLOAT          | *PFLOAT;  | /* 指向float类型指针 */         |
+  | typedef | BOOL near      | *PBOOL;   | /* 指向布尔类型指针 */          |
+  | typedef | BOOL far       | *LPBOOL;  |                                 |
+  | typedef | BYTE near      | *PBYTE;   | /* 指向字节类型指针 */          |
+  | typedef | BYTE far       | *LPBYTE;  |                                 |
+  | typedef | int near       | *PINT;    | /* 整形指针 */                  |
+  | typedef | int far        | *LPINT;   |                                 |
+  | typedef | WORD near      | *PWORD;   | /* 指向WORD类型的指针 */        |
+  | typedef | WORD far       | *LPWORD;  |                                 |
+  | typedef | long far       | *LPLONG;  | /* 指向长整形的指针 */          |
+  | typedef | DWORD near     | *PDWORD;  | /* 指向DWORD类型的指针 */       |
+  | typedef | DWORD far      | *LPDWORD; |                                 |
+  | typedef | void far       | *LPVOID;  | /* 指向void类型的指针 */        |
+  | typedef | CONST void far | *LPCVOID; | /* 指向void类型的常指针 */      |
+  |---------+----------------+-----------+---------------------------------|
+** 宽字符与Unicode
+- Windows 2000 起 底层支持 Unicode, 存取效率比 char 高
+- 头文件: wchar.h 
+  #+begin_src C
+  #include "wchar.h"
+  wchar_t ch = 'A';
+  wchar_t *str = L"C中文";   // 定义宽字符串, L 必须要加
+  #+end_src
+** 概念 
+- window
+- handle
+- event and message(async)
+  #+begin_src C :comments message struct
+    typedef struct tagMSG {
+      HWND hwnd;          // 消息所属窗口
+      UINT message;       // Windows WM_XXX宏
+      WPARAM wParam;      // 指定消息附加消息
+      LPARAM lParam;      // 指定消息附加消息
+      DWORD time;         // 事件投递到队列中的时间
+      POINT pt;           // 当前鼠标位置
+    } MSG;
+  #+end_src
+- 消息传递方法
+  - 通过 GetMessage, 从队列中获取消息
+  - 向窗口直接发送消息
+- 设备环境(DC)
+  间接访问硬件设备环境(Device Context, DC)
+- BeginPaint and EndPaint
+  获取或者释放DC Handle
+- GDI ::Graphics Device Interface(GDI32.DLL)
+- Pen and Brush
+
+** 
+
