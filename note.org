@@ -512,6 +512,70 @@ let p: Vec<&str> = str.lines().collect();
   获取或者释放DC Handle
 - GDI ::Graphics Device Interface(GDI32.DLL)
 - Pen and Brush
-
-** 
+* Windows 打印机驱动开发
+** Windows 打印流程
+src: https://blog.csdn.net/zb774095236/article/details/100985450
+1. 通知打印池开始一个新任务
+2. 打印池调用打印机接口DLL显示打印对话框, 并将打印设置信息回传打印池
+3. 应用程序调用GDI进行绘图
+4. GDI将应用程序的绘图调用保存在EMF文件中, 记录完后, 发送给打印池
+5. GDI返回应用程序完成一次假脱机打印过程, 可以进行其它任务
+6. 打印池调用GDI, 把EMF文件的绘图命令按条分解到打印机上下文中
+7. GDI通过系统调用, 调用GDI引擎实现绘图操作
+8. GDI引擎将GDI绘图命令分解组合, 通过打印机DLL完成各种图形的绘制
+9. 打印机图形DLL将绘图解码后的数据发往打印池
+10. 打印池把打印机数据发往打印机
+** 完成文档打印需实现的基本函数及表面钩子函数
+| DDI函数                        | Desc                     | Ecgprint对应的函数 |
+|--------------------------------+--------------------------+--------------------|
+| DrvStartDoc                    | 开始打印时调用           | OEMStartDoc        |
+| DrvEndDoc                      | 结束打印时调用           | OEMEndDoc          |
+| DrvStartPage                   | 开始打印一个物理页时调用 | OEMStartPage       |
+| DrvSendPage                    | 打印完一个物理页后调用   | OEMSendPage        |
+|--------------------------------+--------------------------+--------------------|
+| 以下打印每个物理页根据实际调用 |                          |                    |
+|--------------------------------+--------------------------+--------------------|
+| DrvAlphaBlend                  | 实现位块透明             | 可选函数, 未实现   |
+| DrvBitBlt                      | 实现位块数据传输         | OEMBitBlt          |
+| DrvCopyBits                    | 复制位图                 | 可选函数, 未实现   |
+| DrvFillPath                    | 填充闭合路径             | 同上               |
+| DrvGradientFill                | 绘制阴影                 | 同上               |
+| DrvLineTo                      | 划线                     | 同上               |
+| DrvNextBand                    | 在物理页绘制完一段后调用 | OEMNextBand        |
+| DtrvPlgBlt                     | 旋转位块                 | 可选函数, 未实现   |
+| DrvStretchBlt                  | 缩放位块                 | OEMStretchBlt      |
+| DrvStrokePath                  | 用画笔绘制Path           | OEMStrokePath      |
+|--------------------------------+--------------------------+--------------------|
+** 打印机驱动构成
+- Printer Graphics DLL
+- Printer Interface DLL
+** Universal Printer Driver
+1. 增加一个GPD文件,  Universal Printer Driver 读取这个文件(Mini Driver)
+2. Printer Graphics DLL 相关Plugin 称为: Rendering Plug-Ins
+3. PrinterInterface DLL 相关Plugin 称为: User Interface Plug-Ins
+** 打印机驱动需完成接口
+以下函数在Universal Printer Driver中, 分别在 UNIDRVUI.DLL和UNIDRV.DLL分别实现
+1. DevQueryPrintEx
+2. DrvConvertDevMode
+3. DrvUpgradePrinter
+** 双向通信
+- 双向通信接口, 由后台处理程序API组成
+- 双向通信架构, XML标准, 用于与设备交换信息
+** 双向通信要求
+- 必须实现双向通信接口: 2选1
+  - IBideSpl COM 接口
+  - ExploreriSpl2 COM 接口
+- 以下2选1接口
+  - IBideRequest
+  - IBidiRequestContainer COM
+- 以下一项或者两项必须为: true
+  - SendRecvBideData <-- 实现在打印提供程序 DLL 中
+  - SendRecvBidiDataFormPort <-- 实现在语言监视服务器DLL或者端口监视服务器DLL中
+** 调用流程
+1. 生成请求
+2. 调用 IBideSpl
+   2.1 单个请求调用 SendRecv 方法
+   2.2 多个请求调用 MultiSendRecv 方法
+3. 服务端处理程序调用 SendRecvBideData or SendRecvBidiDataFormPort
+   ppResData 参数指向内存位置包含打印机响应的  BIDI_RESPONSE_CONTAINER 结构地址
 
