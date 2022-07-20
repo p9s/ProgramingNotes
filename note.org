@@ -2,6 +2,13 @@
 C:\Windows\System32\drivers\etc
 * Programing
 ** C++ compile errors
+*** warning C4995 #pragma deprecated
+可以用 #pragma warning(disable: xxxx ) 的语法将其禁止掉
+在你的工程的预编译头文件（一般来说，就是stdafx.h）中，在 #pragma once 一行后面加上下列三行：
+  - #define _CSTDIO_
+  - #define _CSTRING_
+  - #define _CWCHAR_
+这样，编译器就不会再加载 cstdio / cstring / cwchar 这几个头文件了。
 *** C4996	'ctime': use _CRT_SECURE_NO_WARNINGS.
 项目 -> 属性 -> C/C++ -> 预处理器 -> 预处理器定义
 添加以下语句：
@@ -130,6 +137,11 @@ if (fh.is_open()) {
 #+end_src
 ** Array
 *** Rust
+**** array length
+#+begin_src rust :comments get array's length
+let arr = [1, 2, 3, 5];
+println!("{}", arr.len());
+#+end_src
 **** define and initial array
 #+begin_src rust
   let variable: [dataType; size] = [value1, value2..., valueN];
@@ -443,6 +455,180 @@ let p: Vec<&str> = str.lines().collect();
   let p: Vec<&st> = s.split([':', ';', ' '].as_ref()).collect();
 #+end_src
 ** struct
+** UUID
+*** C
+#+begin_src C :comments generate UUID on linux platform
+  // yum install libuuid-devel   # centos install uuid lib
+  // apt install uuid-dev        # ubuntu platform
+  #include <stdio.h>
+  #include <uuid/uuid.h>
+
+  // gcc uuid.c -luuid -o uuid
+  int main()
+  {
+    int i, n;
+    uuid_t uu[4];
+
+    cahr buf[1024];
+    struct timeval tv;
+
+    // 1
+    uuid_generate(uu[0]);
+
+    // 2
+    uuid_generate_random(uu[1]);
+
+    // 3
+    uuid_generate_time(uu[2]);
+
+    // 4
+    n = uuid_generate_time_safe(uu[3]);
+    printf("n = %d\n", n);
+
+    for (i = 0; i < 4; ++i) {
+      uuid_unparse(uu[i], buf);
+      printf("uu[%d]\t%s\n", i, buf);
+    }
+
+    uuid_time(uu[2], &tv);
+    printf("tv s:%1x u:%1x\n", tv.tv_sec, tv.tv_usec);
+
+    return 0;
+  }
+#+end_src
+*** C++ 
+#+begin_src C++ :comments generate by boot std lib, can be used on both linux and windows
+  #include <boost/uuid/uuid.hpp>
+  #include <boost/uuid/uuid_io.hpp>
+  #include <boost/uuid/uuid_generators.hpp>
+  #include <string>
+
+  std::boost::uuids::uuid rand = std::boost::uuids::random_generator()();
+  const std::string uuid_string = std::boost::uuids::to_string(rand);
+#+end_src
+#+begin_src C++ :commend generate uuid on windows by winAPI
+  #include <objbase.h>
+
+  std::string genUUID()
+  {
+    char buffer[16] = { 0 };  
+    GUID guid;  
+   
+    if ( CoCreateGuid(&guid) ) {  
+      fprintf(stderr, "create guid error\n");  
+      return std::string();
+    }
+
+    std::stringstream str;
+    str.setf(std::ios_base::uppercase);
+    // str.unsetf(std::ios_base::uppercase);
+    str << std::hex << std::setfill('0')
+        << std::setw(2) << (int)((guid.Data1 >> 24) & 0xFF)
+        << std::setw(2) << (int)((guid.Data1 >> 16) & 0xFF)
+        << std::setw(2) << (int)((guid.Data1 >> 8) & 0xFF)
+        << std::setw(2) << (int)((guid.Data1) & 0xFF)
+
+        << std::setw(2) << (int)((guid.Data2 >> 8) & 0xFF)
+        << std::setw(2) << (int)(guid.Data2 & 0xFF)
+
+        << std::setw(2) << (int)((guid.Data3 >> 8) & 0xFF)
+        << std::setw(2) << (int)(guid.Data3 & 0xFF)
+
+
+        << std::setw(2) << (int)guid.Data4[0]
+        << std::setw(2) << (int)guid.Data4[1]
+        << std::setw(2) << (int)guid.Data4[2]
+        << std::setw(2) << (int)guid.Data4[3]
+        << std::setw(2) << (int)guid.Data4[4]
+        << std::setw(2) << (int)guid.Data4[5]
+        << std::setw(2) << (int)guid.Data4[6]
+        << std::setw(2) << (int)guid.Data4[7];
+
+    return str.str();
+  }
+#+end_src
+#+begin_src C++ gen
+
+#+end_src
+** Function return value
+*** Rust
+**** no return defaults to return ()
+#+begin_src rust
+fn main() {}
+// equal to 
+fn main -> () {}
+#+end_src
+**** return multiple value, it's used tuple data type
+#+begin_src rust
+    fn main() {
+      let (p2, p3) = pow_2_3(789);
+    }
+
+  fn pow_2_3(n: i32) -> (i32, i32) {
+    (n*n, n*n*n)
+  }
+#+end_src
+**** diverging function(发散函数), 不返回, 使用 ! 作为返回类型
+#+begin_src rust
+  fn main() {
+      println!("hello");
+      diverging();
+      println("world");
+  }
+
+  fn diverging() -> ! {
+      panic!("this function will never return");
+  }
+#+end_src
+**** Option
+#+begin_src rust
+  // enum Option<T> {
+  //     None,
+  //     Some(T),
+  // }
+
+  fn find(haystack: &str, needle: char) -> Option<usize> {
+      for (offset, c) in haystack.char_indices() {
+          if c == needle {
+              return Some(offset);
+          }
+      }
+      None
+  }
+#+end_src
+**** Result
+#+begin_src rust
+  // enum Result<T, E> {
+  //     Ok(T),
+  //     Err(E),
+  // }
+
+  // type Option<T> = Result<T, ()>;
+
+  // version 1 not good
+  fn double_number(number_str: &str) -> i32 {
+      2 * number_str.parse::<i32>().unwrap()
+  }
+
+  fn main() {
+      let n: i32 = double_number("10");
+      assert_eq!(n, 20);
+  }
+
+  // version 2 better
+  use std::num::ParseIntError;
+
+  fn double_number(number_str: &str) -> Result<i32, ParseIntError> {
+      number_str.parse::<i32>().map(|n| 2 * n )
+  }
+
+  fn main() {
+      match double_number("10") {
+          Ok(n) => assert_eq!(n, 20),
+          Err(err) => println!("{:?}", err);
+      }
+  }
+#+end_src
 * Win32 Printer Driver
 ** 环境
 - vs 2017
