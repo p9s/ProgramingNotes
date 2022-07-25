@@ -242,10 +242,12 @@ iter->second;  // hashmap's value
       _ => println!("Don't have Danile's number."),
   }
 
+  // delete
   contacts.remove(&"Ashley");
 
 
   // access by for loop
+  // for (k, v) in &contacts  maybe this one right?
   for (k, v) in contacts {
       println!("{}: {}": k, v);
   }
@@ -266,6 +268,13 @@ iter->second;  // hashmap's value
       *count += 1;
   }
   println!("{:?}", map);
+#+end_src
+#+begin_src rust :comments 覆盖更新
+  use std::collections::HashMap;
+  let scores = HashMap.new();
+  score.insert("A1", 50);
+  socre.insert("A1", 60); // 覆盖更新
+  socre.entry("A1").or_insert(60); // 非覆盖更新
 #+end_src
 ** String
 *** C
@@ -629,6 +638,62 @@ fn main -> () {}
       }
   }
 #+end_src
+** typedef
+*** C++
+ref: https://zhuanlan.zhihu.com/p/413574268
+#+begin_src C++ :comments 定义别名
+char *pa, *pb;
+typedef char* pCHAR;
+pChar pa, pb;
+#+end_src
+
+#+begin_src C++ :comments 定义新数据类型
+  struct Teacher
+  {
+    int age;
+  } Tea;                   // Tea 是一个变量
+
+  typedef struct Student
+  {
+    int age;
+  } Stu;                   // Stu 是一个结构体类型 <==> struct Student
+
+  void main()
+  {
+    Tea.age = 30;      // 为结构体成员赋值
+    Stu Zhang;         // 声明结构体类型变量
+    Zhang.age = 15;    // 赋值
+
+  }
+#+end_src
+
+#+begin_src C++ :comments 定义平台无关的数据类型
+  typedef long double REAL;
+
+  //在不支持 long double 的平台二上，改为：
+  typedef double REAL;
+
+  //在连 double 都不支持的平台三上，改为：
+  typedef float REAL;
+#+end_src
+
+#+begin_src C++ :comments 复杂声明定义简单别名
+int *(*a[5])(int, char*); // 原型声明
+
+typedef int *(*pFun)(int, char*);
+pFun a[5];
+
+// 在原来的声明里逐步用别名替换一部分复杂声明，如此循环，
+// 把带变量名的部分留到最后替换，得到的就是原声明的最简化版。
+void (*b[10])(void(*)());  // 原始声明
+// 先替换右边括号
+typedef void (*pFunParam);
+// 再替换左边括号
+typedef void (*pFun2)(pFunParam)
+
+// 简化后版本
+pFun2 b[10]
+#+end_src
 * Win32 Printer Driver
 ** 环境
 - vs 2017
@@ -764,4 +829,85 @@ src: https://blog.csdn.net/zb774095236/article/details/100985450
    2.2 多个请求调用 MultiSendRecv 方法
 3. 服务端处理程序调用 SendRecvBideData or SendRecvBidiDataFormPort
    ppResData 参数指向内存位置包含打印机响应的  BIDI_RESPONSE_CONTAINER 结构地址
+** 如何确定打印机是否支持双向通信
+打印机信息2上的属性成员:  
+PRINTER_ATTRIBUTE_ENABLE_BIBI  0x0800
+表示是否支持双向通信
+** GPD File Introduction
+*** GPD file provide information
+- Printer attributes
+- Printer commands
+- Printer features
+- Printer options
+- Printer font descriptions
+- Conditional statements
+- Compressing raster data
+- Handling color formats
+- Halftoning with Unidrv
+- Handling installable features and options
+- Describing printer memory configurations
+*** GPD File Entries 
+**** GPD File Entry Format
+- Format
+  *EntryName: EntryValue {GPD_FileEntry, GPD_FileEntry, ...}
+- Demo
+  #+begin_src C++ :comments The sample of GPD file entry
+    ,*Feature: Orientation
+    {
+        ,*Name: "Orientation"
+        ,*DefaultOption: Portrait
+        ,*Option: Portrait
+        {
+            ,*Name: "Portrait"
+            ,*Command: CmdSelect
+            {
+                ,*Order: DOC_SETUP.7
+                ,*Cmd: "<1B>&l0O"
+            }
+        }
+        ,*Option: LANDSCAPE_CC90
+        {
+            ,*Name: "Landscape"
+            ,*Command: CmdSelect
+            {
+                ,*Order: DOC_SETUP.7
+                ,*Cmd: "<1B>&l1O"
+            }
+        }
+    }
+  #+end_src
+
+**** GPD Value Types
+***** Symbolic names
+**** Line Continuation
+**** Marcos
+**** Preprocessor Directives
+**** Standard Variables
+* CEF
+** CefClient 
+浏览器的回调事件（拖拽、下载、查找、焦点、键盘等）
+都在CefClient类中有对应的注册接口
+提供所有浏览器事件处理接口
+- CefLifeSpanHandler
+- CefRenderHandler
+- CefRefPtr<CefDisplayHandler> GetDisplayHandler() { return NULL;}
+  Browser对象显示状态的事件处理
+- CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() {return NULL;}  
+  与JS Dialog相关的回调事件
+- OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process, CefRefPtr<CefProcessMessage> message) {return false; }
+  进程间通信, browser <--> render
+- CefApp    :: 负责进程的实例化及退出
+  - GetBrowserProcessHandler() :: 创建 browser 进程
+  - GetRenderProcessHandler()  :: 创建 render 进程
+- 抽象类
+  - CefBrowser     :: 表示一个浏览器窗口 
+  - CefFrame       :: 浏览器窗口中一块区域
+- 独立子进程执行, 需要两个分开的工程和分开的入口函数, 在主程序的CefSEttings settings中增加
+  CefString(&settings.browser_subprocess_path)=子进程执行路径
+- JS加载与Cef的交互由Render进程处理, CefApp的GetRenderProcessHandler方法必须提供实现.
+  v8 规范, 每一段js代码必须显式指定context, 因此在调用js代码的时候, 必须先进入context,
+  每个 Frame 都有属于自己的 context, Frame加载都会调用  OnContextCreate 方法
+  - Cef 调用JS
+    - GetFrame::ExecuteJavaScript() 执行 JS
+      - frame-ExecuteJavaScript(const CefString& jsCode, const
 
